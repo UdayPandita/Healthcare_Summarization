@@ -1,3 +1,8 @@
+import torch
+
+print(torch.__version__)
+print("CUDA available:", torch.cuda.is_available())
+print("GPU:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "None")
 import os
 import numpy as np
 from datasets import load_from_disk
@@ -19,6 +24,16 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(BASE_DIR, "tokenized_data")
 
 datasets = load_from_disk(data_path)
+
+# define first
+model_name = "microsoft/prophetnet-large-uncased"
+
+# then use it
+tokenizer = ProphetNetTokenizer.from_pretrained(model_name)
+model = ProphetNetForConditionalGeneration.from_pretrained(model_name)
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
 
 print("=" * 80)
 print("DATA LOADED")
