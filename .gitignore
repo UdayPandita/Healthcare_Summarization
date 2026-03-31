@@ -3,3 +3,7 @@
 /prophetnet_baseline_model
 *.vscode
 *__pycache__/
+/prophetnet_diversity_model
+/prophetnet_diversity
+/prophetnet_rtt_model
+/prophetnet_rtt

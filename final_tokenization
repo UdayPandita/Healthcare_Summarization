@@ -3,76 +3,82 @@ import pandas as pd
 from datasets import Dataset, DatasetDict
 from transformers import ProphetNetTokenizer
 
-# =========================
-# PATHS
-# =========================
-BASE_DIR = os.getcwd()  # safer than __file__ for your setup
 
-train_path = os.path.join(BASE_DIR, "final_train_v2.csv")
-val_path   = os.path.join(BASE_DIR, "validation.csv")
-test_path  = os.path.join(BASE_DIR, "test.csv")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+train_path = os.path.join(BASE_DIR, "final_train.csv")
+val_path = os.path.join(BASE_DIR, "validation.csv")
+test_path = os.path.join(BASE_DIR, "test.csv")
 
 # =========================
 # LOAD DATA
 # =========================
+
 train_df = pd.read_csv(train_path)
-val_df   = pd.read_csv(val_path)
-test_df  = pd.read_csv(test_path)
+val_df = pd.read_csv(val_path)
+test_df = pd.read_csv(test_path)
 
 print("Train:", train_df.shape)
 print("Val:", val_df.shape)
 print("Test:", test_df.shape)
 
 # =========================
-# TO HF DATASET
+# CONVERT TO HF DATASET
 # =========================
+
 datasets = DatasetDict({
     "train": Dataset.from_pandas(train_df),
     "validation": Dataset.from_pandas(val_df),
-    "test": Dataset.from_pandas(test_df),
+    "test": Dataset.from_pandas(test_df)
 })
 
 # =========================
 # TOKENIZER
 # =========================
+
 model_name = "microsoft/prophetnet-large-uncased"
 tokenizer = ProphetNetTokenizer.from_pretrained(model_name)
 
 # =========================
-# TOKENIZE FUNCTION
+# TOKENIZATION FUNCTION
 # =========================
-def tokenize_function(batch):
-    inputs = tokenizer(
-        batch["question"],
+
+def tokenize_function(example):
+    model_input = tokenizer(
+        example["question"],
         max_length=256,
         padding="max_length",
         truncation=True
     )
-    targets = tokenizer(
-        text_target=batch["summary"],
+
+    labels = tokenizer(
+        text_target=example["summary"],
         max_length=64,
         padding="max_length",
         truncation=True
     )
-    inputs["labels"] = targets["input_ids"]
-    return inputs
+
+    model_input["labels"] = labels["input_ids"]
+    return model_input
 
 # =========================
-# APPLY
+# APPLY TOKENIZATION
 # =========================
-tokenized = datasets.map(
+
+tokenized_datasets = datasets.map(
     tokenize_function,
     batched=True,
     remove_columns=["question", "summary"]
 )
 
 print("\nTokenization complete")
-print(tokenized)
+print(tokenized_datasets)
 
 # =========================
 # SAVE
 # =========================
-save_path = os.path.join(BASE_DIR, "tokenized_final_v2")
-tokenized.save_to_disk(save_path)
 
-print("Saved to:", save_path)
+save_path = os.path.join(BASE_DIR, "tokenized_final_data")
+tokenized_datasets.save_to_disk(save_path)
+
+print("Saved tokenized_final_data")
