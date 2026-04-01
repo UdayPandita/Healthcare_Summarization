@@ -17,60 +17,41 @@ print(torch.__version__)
 print("CUDA available:", torch.cuda.is_available())
 print("GPU:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "None")
 
-# =========================
 # LOAD TOKENIZED DATA
-# =========================
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(BASE_DIR, "../data/tokenized_data_bart")
 
 datasets = load_from_disk(data_path)
 
-# define first
 model_name = "facebook/bart-large"
-
-# then use it
 tokenizer = BartTokenizer.from_pretrained(model_name)
 model = BartForConditionalGeneration.from_pretrained(model_name)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
-print("=" * 80)
 print("DATA LOADED")
-print("=" * 80)
 print(datasets)
 
-# =========================
 # LOAD MODEL + TOKENIZER
-# =========================
-
 model_name = "facebook/bart-large"
 
 tokenizer = BartTokenizer.from_pretrained(model_name)
 model = BartForConditionalGeneration.from_pretrained(model_name)
 
-# =========================
 # DATA COLLATOR
-# =========================
-
 data_collator = DataCollatorForSeq2Seq(
     tokenizer=tokenizer,
     model=model
 )
 
-# =========================
 # ROUGE METRIC
-# =========================
-
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
 
-    # Replace -100 with pad token for predictions
     predictions = np.where(predictions != -100, predictions, tokenizer.pad_token_id)
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
 
-    # Replace -100 with pad token for labels
     labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
@@ -94,10 +75,7 @@ def compute_metrics(eval_pred):
         "rougeL": np.mean(scores["rougeL"]),
     }
 
-# =========================
 # TRAINING ARGUMENTS
-# =========================
-
 training_args = Seq2SeqTrainingArguments(
     output_dir=os.path.join(BASE_DIR, "../models/bart_baseline"),
     eval_strategy="epoch",
@@ -117,10 +95,7 @@ training_args = Seq2SeqTrainingArguments(
     report_to=["tensorboard"]
 )
 
-# =========================
 # TRAINER
-# =========================
-
 trainer = Seq2SeqTrainer(
     model=model,
     args=training_args,
@@ -136,17 +111,11 @@ trainer = Seq2SeqTrainer(
     ]
 )
 
-# =========================
 # TRAIN
-# =========================
-
 print("\nStarting training...\n")
 trainer.train()
 
-# =========================
 # SAVE MODEL
-# =========================
-
 trainer.save_model(os.path.join(BASE_DIR, "../models/bart_baseline_model"))
 
 print("\nTraining complete. Model saved.")

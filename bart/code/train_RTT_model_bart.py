@@ -13,63 +13,43 @@ from transformers import (
 )
 from rouge_score import rouge_scorer
 
-# =========================
-# GPU CHECK
-# =========================
 print(torch.__version__)
 print("CUDA available:", torch.cuda.is_available())
 print("GPU:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "None")
 
-# =========================
 # LOAD DATA
-# =========================
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(BASE_DIR, "../data/tokenized_final_data_bart")   # RTT dataset (BART tokenized)
 
 datasets = load_from_disk(data_path)
 
-print("=" * 80)
 print("DATA LOADED (RTT - BART)")
-print("=" * 80)
 print(datasets)
 
-# =========================
 # MODEL + TOKENIZER
-# =========================
-
 model_name = "facebook/bart-large"
 
 tokenizer = BartTokenizer.from_pretrained(model_name)
 model = BartForConditionalGeneration.from_pretrained(model_name)
 
-# move to GPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
 print("Model device:", model.device)
 
-# =========================
 # DATA COLLATOR
-# =========================
-
 data_collator = DataCollatorForSeq2Seq(
     tokenizer=tokenizer,
     model=model
 )
 
-# =========================
 # ROUGE METRIC
-# =========================
-
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
 
-    # Replace -100 with pad token for predictions
     predictions = np.where(predictions != -100, predictions, tokenizer.pad_token_id)
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
 
-    # Replace -100 with pad token for labels
     labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
@@ -93,10 +73,7 @@ def compute_metrics(eval_pred):
         "rougeL": np.mean(scores["rougeL"]),
     }
 
-# =========================
-# TRAINING ARGS (IDENTICAL TO PROPHETNET RTT)
-# =========================
-
+# TRAINING ARGS 
 training_args = Seq2SeqTrainingArguments(
     output_dir=os.path.join(BASE_DIR, "../models/bart_rtt"),
 
@@ -124,10 +101,7 @@ training_args = Seq2SeqTrainingArguments(
     report_to=["tensorboard"]
 )
 
-# =========================
 # TRAINER
-# =========================
-
 trainer = Seq2SeqTrainer(
     model=model,
     args=training_args,
@@ -141,17 +115,11 @@ trainer = Seq2SeqTrainer(
     ]
 )
 
-# =========================
 # TRAIN
-# =========================
-
 print("\nStarting RTT training (BART)...\n")
 trainer.train()
 
-# =========================
 # SAVE MODEL
-# =========================
-
 trainer.save_model(os.path.join(BASE_DIR, "../models/bart_rtt_model"))
 
 print("\nRTT training complete (BART).")
