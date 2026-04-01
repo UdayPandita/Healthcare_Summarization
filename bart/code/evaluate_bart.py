@@ -1,53 +1,45 @@
-import torch
-from tqdm import tqdm
-import os
 import numpy as np
+import json
 from datasets import load_from_disk
 from transformers import (
     BartForConditionalGeneration,
     BartTokenizer,
     Seq2SeqTrainer,
     Seq2SeqTrainingArguments,
-    DataCollatorForSeq2Seq,
-    EarlyStoppingCallback
+    DataCollatorForSeq2Seq
 )
 from rouge_score import rouge_scorer
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # =========================
-# GPU CHECK
+# CHANGE THIS EACH TIME
 # =========================
-print(torch.__version__)
-print("CUDA available:", torch.cuda.is_available())
-print("GPU:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "None")
+
+MODEL_PATH = os.path.join(BASE_DIR, "../models/bart_diversity_model")
+# change to:
+# "../models/bart_baseline_model"
+# "../models/bart_rtt_model"
+# "../models/bart_diversity_model"
+
+TOKENIZED_DATA_PATH = os.path.join(BASE_DIR, "../data/tokenized_data_bart")
+# change to:
+# "../data/tokenized_data_bart"
+# "../data/tokenized_final_data_bart"
+# "../data/tokenized_final_v2_bart"
 
 # =========================
 # LOAD DATA
 # =========================
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(BASE_DIR, "tokenized_final_data_bart")   # RTT dataset (BART tokenized)
-
-datasets = load_from_disk(data_path)
-
-print("=" * 80)
-print("DATA LOADED (RTT - BART)")
-print("=" * 80)
-print(datasets)
+datasets = load_from_disk(TOKENIZED_DATA_PATH)
 
 # =========================
-# MODEL + TOKENIZER
+# LOAD MODEL
 # =========================
 
-model_name = "facebook/bart-large"
-
-tokenizer = BartTokenizer.from_pretrained(model_name)
-model = BartForConditionalGeneration.from_pretrained(model_name)
-
-# move to GPU
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
-
-print("Model device:", model.device)
+tokenizer = BartTokenizer.from_pretrained(MODEL_PATH)
+model = BartForConditionalGeneration.from_pretrained(MODEL_PATH)
 
 # =========================
 # DATA COLLATOR
@@ -59,17 +51,15 @@ data_collator = DataCollatorForSeq2Seq(
 )
 
 # =========================
-# ROUGE METRIC
+# METRICS
 # =========================
 
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
 
-    # Replace -100 with pad token for predictions
     predictions = np.where(predictions != -100, predictions, tokenizer.pad_token_id)
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
 
-    # Replace -100 with pad token for labels
     labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
@@ -94,34 +84,15 @@ def compute_metrics(eval_pred):
     }
 
 # =========================
-# TRAINING ARGS (IDENTICAL TO PROPHETNET RTT)
+# EVAL SETTINGS
 # =========================
 
-training_args = Seq2SeqTrainingArguments(
-    output_dir="bart_rtt",
-
-    do_train=True,
-    do_eval=True,
-
-    eval_strategy="epoch",
-    save_strategy="epoch",
-
-    learning_rate=5e-5,
-    per_device_train_batch_size=2,
+args = Seq2SeqTrainingArguments(
+    output_dir=os.path.join(BASE_DIR, "../models/eval_tmp_bart"),
     per_device_eval_batch_size=2,
-    num_train_epochs=3,
-
-    weight_decay=0.01,
     predict_with_generate=True,
-
-    logging_dir="./logs_rtt_bart",
-    logging_steps=50,
-    save_total_limit=1,
-
-    load_best_model_at_end=True,
-    metric_for_best_model="rougeL",
-    greater_is_better=True,
-    report_to=["tensorboard"]
+    do_train=False,
+    do_eval=True
 )
 
 # =========================
@@ -130,28 +101,28 @@ training_args = Seq2SeqTrainingArguments(
 
 trainer = Seq2SeqTrainer(
     model=model,
-    args=training_args,
-    train_dataset=datasets["train"],
-    eval_dataset=datasets["validation"],
+    args=args,
+    eval_dataset=datasets["test"],   # IMPORTANT
     data_collator=data_collator,
     processing_class=tokenizer,
-    compute_metrics=compute_metrics,
-    callbacks=[
-        EarlyStoppingCallback(early_stopping_patience=2)
-    ]
+    compute_metrics=compute_metrics
 )
 
 # =========================
-# TRAIN
+# RUN EVAL
 # =========================
 
-print("\nStarting RTT training (BART)...\n")
-trainer.train()
+metrics = trainer.evaluate()
+
+print(metrics)
 
 # =========================
-# SAVE MODEL
+# SAVE RESULTS
 # =========================
 
-trainer.save_model("bart_rtt_model")
+filename = MODEL_PATH + "_results.json"
 
-print("\nRTT training complete (BART).")
+with open(filename, "w") as f:
+    json.dump(metrics, f, indent=4)
+
+print(f"Saved {filename}")

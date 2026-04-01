@@ -18,3 +18,5 @@
 /logs_diversity_bart
 /logs_rtt_bart
 /eval_tmp_bart/runs
+bart/models
+prophetnet/models

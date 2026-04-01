@@ -6,11 +6,11 @@ from transformers import ProphetNetTokenizer
 # =========================
 # PATHS
 # =========================
-BASE_DIR = os.getcwd()  # safer than __file__ for your setup
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-train_path = os.path.join(BASE_DIR, "final_train_v2.csv")
-val_path   = os.path.join(BASE_DIR, "validation.csv")
-test_path  = os.path.join(BASE_DIR, "test.csv")
+train_path = os.path.join(BASE_DIR, "../../final_train_v2.csv")
+val_path   = os.path.join(BASE_DIR, "../../validation.csv")
+test_path  = os.path.join(BASE_DIR, "../../test.csv")
 
 # =========================
 # LOAD DATA
@@ -72,7 +72,7 @@ print(tokenized)
 # =========================
 # SAVE
 # =========================
-save_path = os.path.join(BASE_DIR, "tokenized_final_v2")
+save_path = os.path.join(BASE_DIR, "../data/tokenized_final_v2")
 tokenized.save_to_disk(save_path)
 
 print("Saved to:", save_path)

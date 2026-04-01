@@ -1,10 +1,11 @@
 import torch
+from tqdm import tqdm
 import os
 import numpy as np
 from datasets import load_from_disk
 from transformers import (
-    ProphetNetForConditionalGeneration,
-    ProphetNetTokenizer,
+    BartForConditionalGeneration,
+    BartTokenizer,
     Seq2SeqTrainer,
     Seq2SeqTrainingArguments,
     DataCollatorForSeq2Seq,
@@ -24,12 +25,12 @@ print("GPU:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N
 # =========================
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(BASE_DIR, "tokenized_final_data")   # IMPORTANT (RTT dataset)
+data_path = os.path.join(BASE_DIR, "../data/tokenized_final_v2_bart")   # Diversity filtered dataset (BART tokenized)
 
 datasets = load_from_disk(data_path)
 
 print("=" * 80)
-print("DATA LOADED")
+print("DATA LOADED (DIVERSITY - BART)")
 print("=" * 80)
 print(datasets)
 
@@ -37,10 +38,10 @@ print(datasets)
 # MODEL + TOKENIZER
 # =========================
 
-model_name = "microsoft/prophetnet-large-uncased"
+model_name = "facebook/bart-large"
 
-tokenizer = ProphetNetTokenizer.from_pretrained(model_name)
-model = ProphetNetForConditionalGeneration.from_pretrained(model_name)
+tokenizer = BartTokenizer.from_pretrained(model_name)
+model = BartForConditionalGeneration.from_pretrained(model_name)
 
 # move to GPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -64,8 +65,11 @@ data_collator = DataCollatorForSeq2Seq(
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
 
+    # Replace -100 with pad token for predictions
+    predictions = np.where(predictions != -100, predictions, tokenizer.pad_token_id)
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
 
+    # Replace -100 with pad token for labels
     labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
@@ -90,16 +94,16 @@ def compute_metrics(eval_pred):
     }
 
 # =========================
-# TRAINING ARGS (FIXED)
+# TRAINING ARGS (IDENTICAL TO PROPHETNET DIVERSITY)
 # =========================
 
 training_args = Seq2SeqTrainingArguments(
-    output_dir="prophetnet_rtt",
+    output_dir=os.path.join(BASE_DIR, "../models/bart_diversity"),
 
     do_train=True,
     do_eval=True,
 
-    eval_strategy="epoch",   # FIXED (instead of evaluation_strategy)
+    eval_strategy="epoch",
     save_strategy="epoch",
 
     learning_rate=5e-5,
@@ -110,12 +114,14 @@ training_args = Seq2SeqTrainingArguments(
     weight_decay=0.01,
     predict_with_generate=True,
 
-    logging_dir="./logs_rtt",
+    logging_dir=os.path.join(BASE_DIR, "logs_diversity_bart"),
+    logging_steps=50,
     save_total_limit=1,
 
     load_best_model_at_end=True,
     metric_for_best_model="rougeL",
-    greater_is_better=True
+    greater_is_better=True,
+    report_to=["tensorboard"]
 )
 
 # =========================
@@ -139,13 +145,13 @@ trainer = Seq2SeqTrainer(
 # TRAIN
 # =========================
 
-print("\nStarting RTT training...\n")
+print("\nStarting diversity training (BART)...\n")
 trainer.train()
 
 # =========================
 # SAVE MODEL
 # =========================
 
-trainer.save_model("prophetnet_rtt_model")
+trainer.save_model(os.path.join(BASE_DIR, "../models/bart_diversity_model"))
 
-print("\nTraining complete.")
+print("\nDiversity training complete (BART).")

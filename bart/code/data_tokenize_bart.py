@@ -20,9 +20,9 @@ print("=" * 80)
 # -------------------------
 # Load CSV splits
 # -------------------------
-train_path = os.path.join(BASE_DIR, "train.csv")
-val_path = os.path.join(BASE_DIR, "validation.csv")
-test_path = os.path.join(BASE_DIR, "test.csv")
+train_path = os.path.join(BASE_DIR, "../../train.csv")
+val_path = os.path.join(BASE_DIR, "../../validation.csv")
+test_path = os.path.join(BASE_DIR, "../../test.csv")
 
 train_df = pd.read_csv(train_path)
 val_df = pd.read_csv(val_path)
@@ -92,7 +92,7 @@ print(tokenized_datasets["train"][0])
 # -------------------------
 # Save tokenized dataset
 # -------------------------
-save_path = os.path.join(BASE_DIR, "tokenized_data_bart")
+save_path = os.path.join(BASE_DIR, "../data/tokenized_data_bart")
 tokenized_datasets.save_to_disk(save_path)
 
 print(f"\nTokenized dataset saved to: {save_path}")

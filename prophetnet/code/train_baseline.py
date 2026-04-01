@@ -1,11 +1,14 @@
 import torch
-from tqdm import tqdm
+
+print(torch.__version__)
+print("CUDA available:", torch.cuda.is_available())
+print("GPU:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "None")
 import os
 import numpy as np
 from datasets import load_from_disk
 from transformers import (
-    BartForConditionalGeneration,
-    BartTokenizer,
+    ProphetNetForConditionalGeneration,
+    ProphetNetTokenizer,
     Seq2SeqTrainer,
     Seq2SeqTrainingArguments,
     DataCollatorForSeq2Seq,
@@ -13,25 +16,21 @@ from transformers import (
 )
 from rouge_score import rouge_scorer
 
-print(torch.__version__)
-print("CUDA available:", torch.cuda.is_available())
-print("GPU:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "None")
-
 # =========================
 # LOAD TOKENIZED DATA
 # =========================
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(BASE_DIR, "tokenized_data_bart")
+data_path = os.path.join(BASE_DIR, "../data/tokenized_data")
 
 datasets = load_from_disk(data_path)
 
 # define first
-model_name = "facebook/bart-large"
+model_name = "microsoft/prophetnet-large-uncased"
 
 # then use it
-tokenizer = BartTokenizer.from_pretrained(model_name)
-model = BartForConditionalGeneration.from_pretrained(model_name)
+tokenizer = ProphetNetTokenizer.from_pretrained(model_name)
+model = ProphetNetForConditionalGeneration.from_pretrained(model_name)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
@@ -45,10 +44,10 @@ print(datasets)
 # LOAD MODEL + TOKENIZER
 # =========================
 
-model_name = "facebook/bart-large"
+model_name = "microsoft/prophetnet-large-uncased"
 
-tokenizer = BartTokenizer.from_pretrained(model_name)
-model = BartForConditionalGeneration.from_pretrained(model_name)
+tokenizer = ProphetNetTokenizer.from_pretrained(model_name)
+model = ProphetNetForConditionalGeneration.from_pretrained(model_name)
 
 # =========================
 # DATA COLLATOR
@@ -66,11 +65,10 @@ data_collator = DataCollatorForSeq2Seq(
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
 
-    # Replace -100 with pad token for predictions
-    predictions = np.where(predictions != -100, predictions, tokenizer.pad_token_id)
+    # Decode predictions
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
 
-    # Replace -100 with pad token for labels
+    # Replace -100 with pad token
     labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
@@ -99,8 +97,8 @@ def compute_metrics(eval_pred):
 # =========================
 
 training_args = Seq2SeqTrainingArguments(
-    output_dir="bart_baseline",
-    eval_strategy="epoch",
+    output_dir=os.path.join(BASE_DIR, "../models/prophetnet_baseline"),
+    evaluation_strategy="epoch",
     save_strategy="epoch",
     learning_rate=5e-5,
     per_device_train_batch_size=2,
@@ -108,13 +106,11 @@ training_args = Seq2SeqTrainingArguments(
     num_train_epochs=3,
     weight_decay=0.01,
     predict_with_generate=True,
-    logging_dir="./logs",
-    logging_steps=50,
+    logging_dir=os.path.join(BASE_DIR, "logs"),
     save_total_limit=2,
     load_best_model_at_end=True,
     metric_for_best_model="rougeL",
-    greater_is_better=True,
-    report_to=["tensorboard"]
+    greater_is_better=True
 )
 
 # =========================
@@ -147,6 +143,6 @@ trainer.train()
 # SAVE MODEL
 # =========================
 
-trainer.save_model("bart_baseline_model")
+trainer.save_model(os.path.join(BASE_DIR, "../models/prophetnet_baseline_model"))
 
 print("\nTraining complete. Model saved.")

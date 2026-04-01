@@ -4,24 +4,24 @@ from datasets import Dataset, DatasetDict
 from transformers import BartTokenizer
 
 # =========================
-# LOAD RTT DATA
+# LOAD DIVERSITY FILTERED DATA
 # =========================
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 print("=" * 80)
-print("LOADING RTT DATA FOR BART TOKENIZATION")
+print("LOADING DIVERSITY FILTERED DATA FOR BART TOKENIZATION")
 print("=" * 80)
 
-train_path = os.path.join(BASE_DIR, "filtered_augmented_train.csv")
-val_path = os.path.join(BASE_DIR, "validation.csv")
-test_path = os.path.join(BASE_DIR, "test.csv")
+train_path = os.path.join(BASE_DIR, "../../final_train_v2.csv")
+val_path = os.path.join(BASE_DIR, "../../validation.csv")
+test_path = os.path.join(BASE_DIR, "../../test.csv")
 
 train_df = pd.read_csv(train_path)
 val_df = pd.read_csv(val_path)
 test_df = pd.read_csv(test_path)
 
-print("\nTrain (RTT):", train_df.shape)
+print("\nTrain (Diversity):", train_df.shape)
 print("Val:", val_df.shape)
 print("Test:", test_df.shape)
 
@@ -72,7 +72,7 @@ def tokenize_function(example):
 # APPLY TOKENIZATION
 # =========================
 
-print("\nTokenizing RTT data...")
+print("\nTokenizing diversity filtered data...")
 tokenized_datasets = datasets.map(
     tokenize_function,
     batched=True,
@@ -88,8 +88,8 @@ print(tokenized_datasets)
 # SAVE TOKENIZED DATASET
 # -------------------------
 
-save_path = os.path.join(BASE_DIR, "tokenized_final_data_bart")
+save_path = os.path.join(BASE_DIR, "../data/tokenized_final_v2_bart")
 tokenized_datasets.save_to_disk(save_path)
 
-print(f"\nTokenized RTT dataset saved to: {save_path}")
-print("RTT tokenization complete.")
+print(f"\nTokenized diversity dataset saved to: {save_path}")
+print("Diversity tokenization complete.")

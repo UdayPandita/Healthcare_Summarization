@@ -15,8 +15,8 @@ from rouge_score import rouge_scorer
 # =========================
 # LOAD TOKENIZED DATA
 # =========================
-BASE_DIR = os.getcwd()
-data_path = os.path.join(BASE_DIR, "tokenized_final_v2")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+data_path = os.path.join(BASE_DIR, "../data/tokenized_final_v2")
 
 datasets = load_from_disk(data_path)
 
@@ -80,7 +80,7 @@ def compute_metrics(eval_pred):
 # TRAINING ARGS (SAFE)
 # =========================
 training_args = Seq2SeqTrainingArguments(
-    output_dir="prophetnet_diversity",
+    output_dir=os.path.join(BASE_DIR, "../models/prophetnet_diversity"),
 
     do_train=True,
     do_eval=True,
@@ -96,7 +96,7 @@ training_args = Seq2SeqTrainingArguments(
     weight_decay=0.01,
     predict_with_generate=True,
 
-    logging_dir="./logs_div",
+    logging_dir=os.path.join(BASE_DIR, "logs_div"),
     save_total_limit=1,
 
     load_best_model_at_end=True,
@@ -127,6 +127,6 @@ trainer.train()
 # =========================
 # SAVE FINAL MODEL
 # =========================
-trainer.save_model("prophetnet_diversity_model")
+trainer.save_model(os.path.join(BASE_DIR, "../models/prophetnet_diversity_model"))
 
 print("\nTraining complete. Model saved.")

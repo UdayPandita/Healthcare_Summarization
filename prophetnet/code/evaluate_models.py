@@ -9,21 +9,23 @@ from transformers import (
     DataCollatorForSeq2Seq
 )
 from rouge_score import rouge_scorer
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # =========================
 # CHANGE THIS EACH TIME
 # =========================
 
-MODEL_PATH = "prophetnet_diversity_model"
+MODEL_PATH = os.path.join(BASE_DIR, "../models/prophetnet_diversity_model")
 # change to:
-# "prophetnet_rtt_model"
-# "prophetnet_diversity_model"
+# "../models/prophetnet_rtt_model"
+# "../models/prophetnet_diversity_model"
 
 # =========================
 # LOAD DATA
 # =========================
 
-datasets = load_from_disk("tokenized_final_data")
+datasets = load_from_disk("../data/tokenized_final_data")
 
 # =========================
 # LOAD MODEL
@@ -78,7 +80,7 @@ def compute_metrics(eval_pred):
 # =========================
 
 args = Seq2SeqTrainingArguments(
-    output_dir="eval_tmp",
+    output_dir=os.path.join(BASE_DIR, "../models/eval_tmp"),
     per_device_eval_batch_size=2,
     predict_with_generate=True,
     do_train=False,
