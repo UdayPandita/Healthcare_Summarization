@@ -12,41 +12,26 @@ from rouge_score import rouge_scorer
 import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# =========================
-# CHANGE THIS EACH TIME
-# =========================
-
+# Change this to evaluate different models
 MODEL_PATH = os.path.join(BASE_DIR, "../models/prophetnet_diversity_model")
 # change to:
 # "../models/prophetnet_rtt_model"
 # "../models/prophetnet_diversity_model"
 
-# =========================
 # LOAD DATA
-# =========================
-
 datasets = load_from_disk("../data/tokenized_final_data")
 
-# =========================
 # LOAD MODEL
-# =========================
-
 tokenizer = ProphetNetTokenizer.from_pretrained(MODEL_PATH)
 model = ProphetNetForConditionalGeneration.from_pretrained(MODEL_PATH)
 
-# =========================
 # DATA COLLATOR
-# =========================
-
 data_collator = DataCollatorForSeq2Seq(
     tokenizer=tokenizer,
     model=model
 )
 
-# =========================
 # METRICS
-# =========================
-
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
 
@@ -75,10 +60,7 @@ def compute_metrics(eval_pred):
         "rougeL": np.mean(scores["rougeL"]),
     }
 
-# =========================
 # EVAL SETTINGS
-# =========================
-
 args = Seq2SeqTrainingArguments(
     output_dir=os.path.join(BASE_DIR, "../models/eval_tmp"),
     per_device_eval_batch_size=2,
@@ -87,31 +69,22 @@ args = Seq2SeqTrainingArguments(
     do_eval=True
 )
 
-# =========================
 # TRAINER
-# =========================
-
 trainer = Seq2SeqTrainer(
     model=model,
     args=args,
-    eval_dataset=datasets["test"],   # IMPORTANT
+    eval_dataset=datasets["test"],   
     data_collator=data_collator,
     processing_class=tokenizer,
     compute_metrics=compute_metrics
 )
 
-# =========================
 # RUN EVAL
-# =========================
-
 metrics = trainer.evaluate()
 
 print(metrics)
 
-# =========================
 # SAVE RESULTS
-# =========================
-
 filename = MODEL_PATH + "_results.json"
 
 with open(filename, "w") as f:

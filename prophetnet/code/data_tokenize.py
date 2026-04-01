@@ -3,18 +3,14 @@ import pandas as pd
 from datasets import Dataset, DatasetDict
 from transformers import ProphetNetTokenizer
 
-# =========================
 # PATHS
-# =========================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 train_path = os.path.join(BASE_DIR, "../../final_train_v2.csv")
 val_path   = os.path.join(BASE_DIR, "../../validation.csv")
 test_path  = os.path.join(BASE_DIR, "../../test.csv")
 
-# =========================
 # LOAD DATA
-# =========================
 train_df = pd.read_csv(train_path)
 val_df   = pd.read_csv(val_path)
 test_df  = pd.read_csv(test_path)
@@ -23,24 +19,18 @@ print("Train:", train_df.shape)
 print("Val:", val_df.shape)
 print("Test:", test_df.shape)
 
-# =========================
-# TO HF DATASET
-# =========================
+# Convert to HF dataset
 datasets = DatasetDict({
     "train": Dataset.from_pandas(train_df),
     "validation": Dataset.from_pandas(val_df),
     "test": Dataset.from_pandas(test_df),
 })
 
-# =========================
 # TOKENIZER
-# =========================
 model_name = "microsoft/prophetnet-large-uncased"
 tokenizer = ProphetNetTokenizer.from_pretrained(model_name)
 
-# =========================
 # TOKENIZE FUNCTION
-# =========================
 def tokenize_function(batch):
     inputs = tokenizer(
         batch["question"],
@@ -57,9 +47,7 @@ def tokenize_function(batch):
     inputs["labels"] = targets["input_ids"]
     return inputs
 
-# =========================
 # APPLY
-# =========================
 tokenized = datasets.map(
     tokenize_function,
     batched=True,
@@ -69,9 +57,7 @@ tokenized = datasets.map(
 print("\nTokenization complete")
 print(tokenized)
 
-# =========================
 # SAVE
-# =========================
 save_path = os.path.join(BASE_DIR, "../data/tokenized_final_v2")
 tokenized.save_to_disk(save_path)
 

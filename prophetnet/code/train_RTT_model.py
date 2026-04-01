@@ -12,31 +12,20 @@ from transformers import (
 )
 from rouge_score import rouge_scorer
 
-# =========================
-# GPU CHECK
-# =========================
 print(torch.__version__)
 print("CUDA available:", torch.cuda.is_available())
 print("GPU:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "None")
 
-# =========================
 # LOAD DATA
-# =========================
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(BASE_DIR, "../data/tokenized_final_data")   # IMPORTANT (RTT dataset)
 
 datasets = load_from_disk(data_path)
 
-print("=" * 80)
 print("DATA LOADED")
-print("=" * 80)
 print(datasets)
 
-# =========================
 # MODEL + TOKENIZER
-# =========================
-
 model_name = "microsoft/prophetnet-large-uncased"
 
 tokenizer = ProphetNetTokenizer.from_pretrained(model_name)
@@ -48,19 +37,13 @@ model.to(device)
 
 print("Model device:", model.device)
 
-# =========================
 # DATA COLLATOR
-# =========================
-
 data_collator = DataCollatorForSeq2Seq(
     tokenizer=tokenizer,
     model=model
 )
 
-# =========================
 # ROUGE METRIC
-# =========================
-
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
 
@@ -89,17 +72,14 @@ def compute_metrics(eval_pred):
         "rougeL": np.mean(scores["rougeL"]),
     }
 
-# =========================
-# TRAINING ARGS (FIXED)
-# =========================
-
+# TRAINING ARGS 
 training_args = Seq2SeqTrainingArguments(
     output_dir=os.path.join(BASE_DIR, "../models/prophetnet_rtt"),
 
     do_train=True,
     do_eval=True,
 
-    eval_strategy="epoch",   # FIXED (instead of evaluation_strategy)
+    eval_strategy="epoch",   
     save_strategy="epoch",
 
     learning_rate=5e-5,
@@ -118,10 +98,7 @@ training_args = Seq2SeqTrainingArguments(
     greater_is_better=True
 )
 
-# =========================
 # TRAINER
-# =========================
-
 trainer = Seq2SeqTrainer(
     model=model,
     args=training_args,
@@ -135,17 +112,11 @@ trainer = Seq2SeqTrainer(
     ]
 )
 
-# =========================
 # TRAIN
-# =========================
-
 print("\nStarting RTT training...\n")
 trainer.train()
 
-# =========================
 # SAVE MODEL
-# =========================
-
 trainer.save_model(os.path.join(BASE_DIR, "../models/prophetnet_rtt_model"))
 
 print("\nTraining complete.")

@@ -3,10 +3,8 @@ from transformers import ProphetNetTokenizer, ProphetNetForConditionalGeneration
 import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# =========================
 # LOAD MODEL
-# =========================
-
+# Change this to evaluate different models
 MODEL_PATH = os.path.join(BASE_DIR, "../models/prophetnet_rtt_model")  
 # try also:
 # "../models/prophetnet_rtt_model"
@@ -20,10 +18,7 @@ model.to(device)
 
 print("Using device:", device)
 
-# =========================
 # INFERENCE FUNCTION
-# =========================
-
 def summarize(text):
     inputs = tokenizer(
         text,
@@ -41,10 +36,7 @@ def summarize(text):
 
     return tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 
-# =========================
 # TEST EXAMPLES
-# =========================
-
 examples = [
     """I have had a persistent cough and fever for the past 3 days, which has been getting progressively worse. 
     I also have body aches and fatigue. My temperature has been hovering around 101-102 degrees Fahrenheit. 
@@ -70,10 +62,7 @@ examples = [
     Sometimes it goes away after a few hours but comes back later. Should I be worried and seek immediate medical attention?""",
 ]
 
-# =========================
 # RUN
-# =========================
-
 for i, text in enumerate(examples):
     print("\n" + "="*60)
     print(f"INPUT {i+1}:\n{text}")

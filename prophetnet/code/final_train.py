@@ -12,9 +12,7 @@ from transformers import (
 )
 from rouge_score import rouge_scorer
 
-# =========================
 # LOAD TOKENIZED DATA
-# =========================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(BASE_DIR, "../data/tokenized_final_v2")
 
@@ -25,9 +23,7 @@ print("DATA LOADED")
 print("=" * 80)
 print(datasets)
 
-# =========================
 # MODEL + TOKENIZER
-# =========================
 model_name = "microsoft/prophetnet-large-uncased"
 
 tokenizer = ProphetNetTokenizer.from_pretrained(model_name)
@@ -39,17 +35,13 @@ model.to(device)
 print("CUDA available:", torch.cuda.is_available())
 print("Model device:", model.device)
 
-# =========================
 # DATA COLLATOR
-# =========================
 data_collator = DataCollatorForSeq2Seq(
     tokenizer=tokenizer,
     model=model
 )
 
-# =========================
 # ROUGE METRICS
-# =========================
 def compute_metrics(eval_pred):
     preds, labels = eval_pred
 
@@ -76,9 +68,7 @@ def compute_metrics(eval_pred):
         "rougeL": np.mean(rl),
     }
 
-# =========================
-# TRAINING ARGS (SAFE)
-# =========================
+# TRAINING ARGS 
 training_args = Seq2SeqTrainingArguments(
     output_dir=os.path.join(BASE_DIR, "../models/prophetnet_diversity"),
 
@@ -104,29 +94,23 @@ training_args = Seq2SeqTrainingArguments(
     greater_is_better=True
 )
 
-# =========================
 # TRAINER
-# =========================
 trainer = Seq2SeqTrainer(
     model=model,
     args=training_args,
     train_dataset=datasets["train"],
     eval_dataset=datasets["validation"],
     data_collator=data_collator,
-    processing_class=tokenizer,   # IMPORTANT for your version
+    processing_class=tokenizer,   
     compute_metrics=compute_metrics,
     callbacks=[EarlyStoppingCallback(early_stopping_patience=2)]
 )
 
-# =========================
 # TRAIN
-# =========================
 print("\nStarting Diversity training...\n")
 trainer.train()
 
-# =========================
 # SAVE FINAL MODEL
-# =========================
 trainer.save_model(os.path.join(BASE_DIR, "../models/prophetnet_diversity_model"))
 
 print("\nTraining complete. Model saved.")

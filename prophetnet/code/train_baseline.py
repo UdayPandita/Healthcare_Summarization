@@ -16,59 +16,40 @@ from transformers import (
 )
 from rouge_score import rouge_scorer
 
-# =========================
 # LOAD TOKENIZED DATA
-# =========================
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(BASE_DIR, "../data/tokenized_data")
 
 datasets = load_from_disk(data_path)
 
-# define first
 model_name = "microsoft/prophetnet-large-uncased"
-
-# then use it
 tokenizer = ProphetNetTokenizer.from_pretrained(model_name)
 model = ProphetNetForConditionalGeneration.from_pretrained(model_name)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
-print("=" * 80)
 print("DATA LOADED")
-print("=" * 80)
 print(datasets)
 
-# =========================
 # LOAD MODEL + TOKENIZER
-# =========================
-
 model_name = "microsoft/prophetnet-large-uncased"
 
 tokenizer = ProphetNetTokenizer.from_pretrained(model_name)
 model = ProphetNetForConditionalGeneration.from_pretrained(model_name)
 
-# =========================
 # DATA COLLATOR
-# =========================
-
 data_collator = DataCollatorForSeq2Seq(
     tokenizer=tokenizer,
     model=model
 )
 
-# =========================
 # ROUGE METRIC
-# =========================
-
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
 
-    # Decode predictions
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
 
-    # Replace -100 with pad token
     labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
@@ -92,10 +73,7 @@ def compute_metrics(eval_pred):
         "rougeL": np.mean(scores["rougeL"]),
     }
 
-# =========================
 # TRAINING ARGUMENTS
-# =========================
-
 training_args = Seq2SeqTrainingArguments(
     output_dir=os.path.join(BASE_DIR, "../models/prophetnet_baseline"),
     evaluation_strategy="epoch",
@@ -113,10 +91,7 @@ training_args = Seq2SeqTrainingArguments(
     greater_is_better=True
 )
 
-# =========================
 # TRAINER
-# =========================
-
 trainer = Seq2SeqTrainer(
     model=model,
     args=training_args,
@@ -132,17 +107,11 @@ trainer = Seq2SeqTrainer(
     ]
 )
 
-# =========================
 # TRAIN
-# =========================
-
 print("\nStarting training...\n")
 trainer.train()
 
-# =========================
 # SAVE MODEL
-# =========================
-
 trainer.save_model(os.path.join(BASE_DIR, "../models/prophetnet_baseline_model"))
 
 print("\nTraining complete. Model saved.")
