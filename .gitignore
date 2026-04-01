@@ -7,3 +7,14 @@
 /prophetnet_diversity
 /prophetnet_rtt_model
 /prophetnet_rtt
+/wandb
+/bart_baseline_model
+/bart_baseline
+/bart_diversity_model
+/bart_diversity
+/bart_rtt_model
+/bart_rtt
+/logs
+/logs_diversity_bart
+/logs_rtt_bart
+/eval_tmp_bart/runs
